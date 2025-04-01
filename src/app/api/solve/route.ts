@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import multer from 'multer';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 
@@ -10,22 +9,6 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
 const visionModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 const textModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
-// Multer 설정: 메모리에 파일 저장
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
-
-// Multer 미들웨어를 프로미스로 래핑
-const runMiddleware = (req: Request, res: Response, fn: any) => {
-  return new Promise((resolve, reject) => {
-    fn(req, res, (result: any) => {
-      if (result instanceof Error) {
-        return reject(result);
-      }
-      return resolve(result);
-    });
-  });
-};
-
 // 인터페이스 정의
 interface ParsedData {
   question: string | null;
@@ -35,12 +18,6 @@ interface ParsedData {
 interface Solution {
   answer: string | null;
   explanation: string | null;
-}
-
-interface ErrorResponse {
-  message: string;
-  stack?: string;
-  response?: unknown;
 }
 
 export async function POST(request: Request) {
