@@ -37,6 +37,12 @@ interface Solution {
   explanation: string | null;
 }
 
+interface ErrorResponse {
+  message: string;
+  stack?: string;
+  response?: unknown;
+}
+
 export async function POST(request: Request) {
   try {
     // FormData로 변환
@@ -76,14 +82,14 @@ export async function POST(request: Request) {
       const visionResult = await visionModel.generateContent([visionPrompt, imagePart]);
       extractedText = visionResult.response.text();
       console.log("Vision API Result Text:", extractedText);
-    } catch (visionError: any) {
+    } catch (error) {
+      const err = error as Error;
       console.error("Gemini Vision API Error:", {
-        message: visionError.message,
-        stack: visionError.stack,
-        response: visionError.response?.data
+        message: err.message,
+        stack: err.stack,
       });
       return NextResponse.json(
-        { error: `이미지에서 텍스트 추출 실패: ${visionError.message}` },
+        { error: `이미지에서 텍스트 추출 실패: ${err.message}` },
         { status: 500 }
       );
     }
@@ -99,11 +105,11 @@ export async function POST(request: Request) {
       const jsonString = rawJsonResponse.replace(/^```json\s*|```$/g, '').trim();
       parsedData = JSON.parse(jsonString);
       console.log("Parsed Data:", parsedData);
-    } catch (parseError: any) {
+    } catch (error) {
+      const err = error as Error;
       console.error("Gemini Parse API/JSON Error:", {
-        message: parseError.message,
-        stack: parseError.stack,
-        response: parseError.response?.data
+        message: err.message,
+        stack: err.stack,
       });
       parsedData = { question: extractedText, options: [] };
     }
@@ -120,13 +126,13 @@ export async function POST(request: Request) {
         const solveJsonString = rawSolveResponse.replace(/^```json\s*|```$/g, '').trim();
         solution = JSON.parse(solveJsonString);
         console.log("Solution Data:", solution);
-      } catch (solveError: any) {
+      } catch (error) {
+        const err = error as Error;
         console.error("Gemini Solve API/JSON Error:", {
-          message: solveError.message,
-          stack: solveError.stack,
-          response: solveError.response?.data
+          message: err.message,
+          stack: err.stack,
         });
-        solution = { answer: "풀이 실패", explanation: `AI가 정답 및 해설 생성에 실패했습니다: ${solveError.message}` };
+        solution = { answer: "풀이 실패", explanation: `AI가 정답 및 해설 생성에 실패했습니다: ${err.message}` };
       }
     } else {
       solution = { answer: "문제 없음", explanation: "문제를 인식할 수 없어 풀이할 수 없습니다." };
@@ -140,14 +146,14 @@ export async function POST(request: Request) {
       solution: solution,
     });
 
-  } catch (error: any) {
+  } catch (error) {
+    const err = error as Error;
     console.error('API Route Error:', {
-      message: error.message,
-      stack: error.stack,
-      response: error.response?.data
+      message: err.message,
+      stack: err.stack,
     });
     return NextResponse.json(
-      { error: `서버 내부 오류 발생: ${error.message}` },
+      { error: `서버 내부 오류 발생: ${err.message}` },
       { status: 500 }
     );
   }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
 // 결과 데이터 타입을 위한 인터페이스 정의
 interface ParsedData {
@@ -14,9 +14,12 @@ interface Solution {
   explanation: string | null;
 }
 
+interface ApiErrorResponse {
+  error: string;
+}
+
 export default function HomePage() {
   // 상태 변수들 정의
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [extractedText, setExtractedText] = useState<string | null>(null);
   const [parsedData, setParsedData] = useState<ParsedData | null>(null);
   const [solution, setSolution] = useState<Solution | null>(null);
@@ -27,13 +30,11 @@ export default function HomePage() {
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
-      setSelectedFile(file);
-      // 파일 선택 시 이전 결과 초기화
+      setIsLoading(true);
+      setError(null);
       setExtractedText(null);
       setParsedData(null);
       setSolution(null);
-      setError(null);
-      setIsLoading(true);
 
       const formData = new FormData();
       formData.append('imageFile', file);
@@ -60,20 +61,18 @@ export default function HomePage() {
           setError(response.data.error);
         }
 
-      } catch (err: any) {
+      } catch (error) {
+        const err = error as AxiosError<ApiErrorResponse>;
         console.error('API call failed:', err);
         setError(err.response?.data?.error || '문제 분석 중 오류가 발생했습니다.');
       } finally {
         setIsLoading(false);
       }
-    } else {
-      setSelectedFile(null);
     }
   };
 
   // 다른 문제 풀기 핸들러
   const handleNewProblem = () => {
-    setSelectedFile(null);
     setExtractedText(null);
     setParsedData(null);
     setSolution(null);
